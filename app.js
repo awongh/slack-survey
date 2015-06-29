@@ -2,7 +2,10 @@ const PORT = 80;
 
 var express = require('express');
 var bodyParser = require('body-parser')
+
 var app = express();
+app.set('views', './')
+app.set('view engine', 'jade')
 
 var mongo = require('mongodb').MongoClient;
 
@@ -15,7 +18,7 @@ var jsonParser = bodyParser.json()
 var urlencodedParser = bodyParser.urlencoded({ extended: false })
 
 app.get('/', function (req, res) {
-    res.send('Hello World!');
+    res.render('index', { title: 'Hey', message: 'Hello there!'});
 });
 
 app.get('/channel/:channel', function (req, res) {
@@ -29,8 +32,8 @@ app.get('/channel/:channel', function (req, res) {
     console.log("Connected correctly to server for query");
 
     findDocuments(db, query, function(result){
-      console.log("insert:", result);
-      res.send(result);
+      console.log("result of query is:", result);
+      res.render('channel', {result : result });
     });
   });
 });

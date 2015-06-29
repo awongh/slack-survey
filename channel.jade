@@ -1,0 +1,14 @@
+doctype html
+html(lang="en")
+  head
+    title!= title
+  body
+
+    h1 Welcome to the survey!
+
+    each item in result
+      li 
+        p= item.message.user_name
+        p= item.message.text
+
+
