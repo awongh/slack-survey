@@ -1,15 +1,16 @@
 const PORT = 80;
 
+var path = require('path');
+
 var express = require('express');
 var bodyParser = require('body-parser')
 
+var OAuth = require('oauth');
+var OAuth2 = OAuth.OAuth2;
+
 var app = express();
-app.set('views', './')
-app.set('view engine', 'jade')
 
-var mongo = require('mongodb').MongoClient;
-
-var mongourl = 'mongodb://localhost:27017/slack';
+app.use(express.static('public'));
 
 // create application/json parser
 var jsonParser = bodyParser.json()
@@ -18,45 +19,31 @@ var jsonParser = bodyParser.json()
 var urlencodedParser = bodyParser.urlencoded({ extended: false })
 
 app.get('/', function (req, res) {
-    res.render('index', { title: 'Hey', message: 'Hello there!'});
+    res.sendFile(path.join(__dirname + '/index.html'));
 });
 
-app.get('/channel/:channel', function (req, res) {
-  var channel = req.params.channel;
+app.get('/gettoken', function (req, res) {
 
-  if (!req.params.channel) return res.sendStatus(400)
+    var twitterConsumerKey = '3nfexeMqFXFbpjxlRAeA38cV7';
 
-  var query = { 'channel' : channel };
+    var twitterConsumerSecret = 'Cfm8l81E8NewfIY4yvq2PNwh0ipaBXajARkDivZRoU0QXp9JCl';
 
-  mongo.connect(mongourl, function(err, db) {
-    console.log("Connected correctly to server for query");
+    var oauth2 = new OAuth2(twitterConsumerKey,
+      twitterConsumerSecret,
+      'https://api.twitter.com/', 
+      null,
+      'oauth2/token', 
+      null);
 
-    findDocuments(db, query, function(result){
-      console.log("result of query is:", result);
-      res.render('channel', {result : result });
+    oauth2.getOAuthAccessToken(
+      '',
+      {'grant_type':'client_credentials'},
+      function (e, access_token, refresh_token, results){
+        console.log('bearer: ',access_token);
+        //done();
+
+        res.json({ token: access_token});
     });
-  });
-});
-
-app.post('/', urlencodedParser, function (req, res) {
-
-  if (!req.body) return res.sendStatus(400)
-
-  mongo.connect(mongourl, function(err, db) {
-    console.log("Connected correctly to server");
-
-    var channel = req.body.channel_name;
-
-    var data = {
-      channel : channel,
-      message : req.body
-    };
-
-    insertDocuments(db, data, function(result){
-      console.log("insert:", result);
-      res.send('Hello Post World!');
-    });
-  });
 });
 
 var server = app.listen(PORT, function () {
@@ -66,30 +53,3 @@ var server = app.listen(PORT, function () {
 
   console.log('Example app listening at http://%s:%s', host, port);
 });
-
-var insertDocuments = function(db, data, callback) {
-  // Get the documents collection
-  var collection = db.collection('slack');
-  // Insert some documents
-  collection.insert(data, function(err, result) {
-    callback(result);
-    db.close();
-  });
-};
-
-var findDocuments = function(db, query, callback){
- // Get the documents collection
-  var collection = db.collection('slack');
-  // Insert some documents
-  collection.find(query)
-    .toArray(function(err, docs) {
-
-      if (!err) {
-        callback(docs);
-        db.close();
-
-      }else{
-        console.log( 'EEERRRRRR' );
-      }
-  });
-};
