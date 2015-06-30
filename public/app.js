@@ -1,11 +1,11 @@
 $.ready(function(){
-  $("#token").click(function(){
+  $("#messages").click(function(){
     $.ajax({
       method: "get",
-      url: "/gettoken"
+      url: "/"
     })
-    .done(function( msg ) {
-      alert( "Data Saved: " + msg );
+    .done(function( response ) {
+      console.log( response );
     });
 
   });

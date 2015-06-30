@@ -4,11 +4,18 @@ var path = require('path');
 
 var express = require('express');
 var bodyParser = require('body-parser')
+var config = require('./config.json');
 
-var OAuth = require('oauth');
-var OAuth2 = OAuth.OAuth2;
+var Slack = require('slack-node');
+
+var slackToken = config.slack.token;
+
+slack = new Slack(slackToken);
 
 var app = express();
+
+app.set('views', './')
+app.set('view engine', 'jade')
 
 app.use(express.static('public'));
 
@@ -19,30 +26,45 @@ var jsonParser = bodyParser.json()
 var urlencodedParser = bodyParser.urlencoded({ extended: false })
 
 app.get('/', function (req, res) {
-    res.sendFile(path.join(__dirname + '/index.html'));
+    res.render('index', { title: 'Hey', message: 'Hello there!'});
+    //res.sendFile(path.join(__dirname + '/index.html'));
 });
 
-app.get('/gettoken', function (req, res) {
+app.post('/', function (req, res) {
 
-    var twitterConsumerKey = '3nfexeMqFXFbpjxlRAeA38cV7';
+    //get anyone who's ever IM'd you
+    slack.api('im.list', function(err, response){
+      var channels = [];
 
-    var twitterConsumerSecret = 'Cfm8l81E8NewfIY4yvq2PNwh0ipaBXajARkDivZRoU0QXp9JCl';
+      for( var channelIndex in response.ims ){
+        if( response.ims.hasOwnProperty( channelIndex ) ){
+          var channel = response.ims[channelIndex]
+          if( channel.is_user_deleted == false ){
+            channels.push( channel.id );
+          }
+        }
+      }
 
-    var oauth2 = new OAuth2(twitterConsumerKey,
-      twitterConsumerSecret,
-      'https://api.twitter.com/', 
-      null,
-      'oauth2/token', 
-      null);
+      var messages = [];
+      var messageCount = 0;
 
-    oauth2.getOAuthAccessToken(
-      '',
-      {'grant_type':'client_credentials'},
-      function (e, access_token, refresh_token, results){
-        console.log('bearer: ',access_token);
-        //done();
+      //for each person get a history of their messages
+      for( var i=0; i< channels.length; i++ ){
 
-        res.json({ token: access_token});
+        slack.api('im.history', {
+          channel:channels[i]
+        }, function(err, response){
+          if( response["messages"].length > 0 ){
+            messages.push( response );
+          }
+          messageCount++;
+
+          if( messageCount == channels.length ){
+            res.json( messages );
+            res.end();
+          }
+        });
+      }
     });
 });
 

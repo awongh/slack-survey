@@ -2,6 +2,6 @@
   { "express" : "4.13.0"
   , "body-parser" : "1.13.1"
   , "jade" : "1.11.0"
-  , "oauth" : "0.9.13"
+  , "slack-node" : "0.1.3"
   }
 }
